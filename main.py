@@ -7,7 +7,7 @@ from datetime import datetime
 app = FastAPI()
 
 # 連接 Google Sheet (複製您之前的邏輯)
-gc = gspread.service_account(filename='apbolclibrary-8678b7a5e3ac.json')
+gc = gspread.service_account(filename='service_account.json')
 SHEET_URL = 'https://docs.google.com/spreadsheets/d/1eXfZQTp7r9moUJ0vetuOvMsB0a91HRq6V994_0L-oEo/edit?gid=1945406050#gid=1945406050'
 
 def get_db():

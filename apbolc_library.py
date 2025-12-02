@@ -2,7 +2,7 @@ import gspread
 
 # 1. 設定：告訴程式金鑰檔在哪裡
 # 這裡假設您的 json 檔名叫做 service_account.json，並且跟程式碼在同一層目錄
-gc = gspread.service_account(filename='apbolclibrary-8678b7a5e3ac.json')
+gc = gspread.service_account(filename='service_account.json')
 
 # 2. 連線：填入您的 Google Sheet 網址
 # 請將下方的網址換成您自己試算表的網址
