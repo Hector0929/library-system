@@ -1,3 +1,4 @@
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, HTTPException
 import gspread
 from pydantic import BaseModel
@@ -5,6 +6,15 @@ from datetime import datetime
 
 # --- 初始化 ---
 app = FastAPI()
+
+# --- CORS 設定 ---
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # "*" 代表允許任何網址連線 (測試方便)，正式上線可改成您的網址
+    allow_credentials=True,
+    allow_methods=["*"],  # 允許所有動作 (GET, POST...)
+    allow_headers=["*"],
+)
 
 # 連接 Google Sheet (複製您之前的邏輯)
 gc = gspread.service_account(filename='service_account.json')
