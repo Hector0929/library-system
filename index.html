@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>班級圖書借閱系統</title>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 20px; background: #f0f2f5; text-align: center; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); max-width: 500px; margin: 0 auto; }
+        h1 { margin-bottom: 20px; font-size: 1.5rem; color: #333; }
+        input { padding: 10px; border: 1px solid #ddd; border-radius: 6px; width: 80%; margin-bottom: 10px; font-size: 16px; }
+        #reader { width: 100%; margin-top: 20px; border-radius: 8px; overflow: hidden; }
+        .btn { display: inline-block; padding: 10px 20px; margin: 5px; border-radius: 6px; color: white; text-decoration: none; border: none; font-size: 16px; cursor: pointer; width: 100%; }
+        .btn-blue { background: #007bff; }
+        .btn-green { background: #28a745; }
+        .btn-orange { background: #fd7e14; }
+        .btn-red { background: #dc3545; }
+        #result-area { margin-top: 20px; display: none; padding: 15px; background: #e9ecef; border-radius: 8px; }
+        .status-tag { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .status-available { background: #d4edda; color: #155724; }
+        .status-borrowed { background: #f8d7da; color: #721c24; }
+        .loading { color: #666; font-style: italic; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h1>📚 班級圖書掃描</h1>
+    
+    <div>
+        <label>我的學號：</label><br>
+        <input type="text" id="student_id" placeholder="請輸入學號 (如 A001)">
+    </div>
+
+    <div id="reader"></div>
+    <p id="camera-msg" style="font-size:12px; color:#888;">請允許使用相機</p>
+
+    <div id="result-area">
+        <h3 id="book-title">書名載入中...</h3>
+        <p>狀態：<span id="book-status" class="status-tag">查詢中</span></p>
+        <p id="status-msg" style="font-size:14px; color:#555;"></p>
+        
+        <div id="actions">
+            </div>
+    </div>
+</div>
+
+<script>
+    // ★★★ 設定區：Render 的網址 ★★★
+    const API_BASE_URL = "https://library-system-yb3c.onrender.com"; 
+
+    // --- 程式邏輯 ---
+    const studentInput = document.getElementById('student_id');
+    const resultArea = document.getElementById('result-area');
+    const actionsDiv = document.getElementById('actions');
+    let currentBookId = null;
+
+    // 1. 自動讀取/儲存學號
+    if(localStorage.getItem('student_id')) {
+        studentInput.value = localStorage.getItem('student_id');
+    }
+    studentInput.addEventListener('change', () => {
+        localStorage.setItem('student_id', studentInput.value);
+    });
+
+    // 2. 掃描成功後的動作
+    function onScanSuccess(decodedText, decodedResult) {
+        console.log(`掃描到: ${decodedText}`);
+        
+        if (!studentInput.value) {
+            alert("請先輸入學號！");
+            return;
+        }
+
+        // 暫停掃描，避免重複觸發
+        html5QrcodeScanner.clear();
+        document.getElementById('camera-msg').innerText = "掃描成功！處理中...";
+        
+        // 呼叫後端查詢書籍
+        fetchBookInfo(decodedText);
+    }
+
+    // 3. 查詢書籍 API
+    async function fetchBookInfo(bookId) {
+        resultArea.style.display = 'block';
+        actionsDiv.innerHTML = '<p class="loading">正在查詢書籍狀態...</p>';
+        
+        try {
+            const response = await fetch(`${API_BASE_URL}/scan/${bookId}`);
+            if (!response.ok) throw new Error("找不到書籍或連線錯誤");
+            
+            const data = await response.json();
+            currentBookId = data.book_id;
+            
+            // 更新畫面
+            document.getElementById('book-title').innerText = data.title;
+            const statusEl = document.getElementById('book-status');
+            const msgEl = document.getElementById('status-msg');
+            
+            statusEl.innerText = data.status;
+            msgEl.innerText = data.message;
+            
+            statusEl.className = 'status-tag ' + (data.status === 'Available' ? 'status-available' : 'status-borrowed');
+            
+            // 產生按鈕
+            renderButtons(data.status);
+
+        } catch (error) {
+            alert("錯誤：" + error.message);
+            location.reload(); // 重新整理讓掃描器回來
+        }
+    }
+
+    // 4. 根據狀態顯示按鈕
+    function renderButtons(status) {
+        let html = '';
+        
+        if (status === 'Available') {
+            html += `<button class="btn btn-green" onclick="doAction('borrow')">我要借書</button>`;
+        } else if (status === 'Borrowed' || status === 'Reserved') {
+            // 如果是被借走，可能要還書，也可能要排隊
+            html += `<button class="btn btn-orange" onclick="doAction('return')">我要還書</button>`;
+            html += `<div style="height:10px"></div>`; // 間隔
+            html += `<button class="btn btn-blue" onclick="doAction('queue')">我要排隊</button>`;
+        }
+        
+        html += `<div style="height:10px"></div>`;
+        html += `<button class="btn btn-red" onclick="location.reload()">重新掃描</button>`;
+        
+        actionsDiv.innerHTML = html;
+    }
+
+    // 5. 執行 借/還/排隊 動作
+    async function doAction(actionType) {
+        const studentId = studentInput.value;
+        actionsDiv.innerHTML = '<p class="loading">正在處理請求...</p>';
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/${actionType}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ book_id: currentBookId, student_id: studentId })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                alert("成功：" + result.message);
+                location.reload(); // 成功後重整頁面
+            } else {
+                alert("失敗：" + result.message);
+                // 失敗可能要重新顯示按鈕，這裡簡單處理直接重整
+                location.reload(); 
+            }
+        } catch (error) {
+            alert("連線失敗：" + error.message);
+            location.reload();
+        }
+    }
+
+    // 初始化掃描器
+    let html5QrcodeScanner = new Html5QrcodeScanner(
+        "reader", { fps: 10, qrbox: 250 });
+    html5QrcodeScanner.render(onScanSuccess);
+
+</script>
+
+</body>
+</html>
