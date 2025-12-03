@@ -1,6 +1,8 @@
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, HTTPException
 import gspread
+import os
+import json
 from pydantic import BaseModel
 from datetime import datetime
 
@@ -8,16 +10,30 @@ from datetime import datetime
 app = FastAPI()
 
 # --- CORS 設定 ---
+origins = [
+    "http://localhost",
+    "http://localhost:8000",
+    "https://hector0929.github.io",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # "*" 代表允許任何網址連線 (測試方便)，正式上線可改成您的網址
+    allow_origins=origins,  # 明確指定允許的來源，解決 CORS 問題
     allow_credentials=True,
-    allow_methods=["*"],  # 允許所有動作 (GET, POST...)
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# 連接 Google Sheet (複製您之前的邏輯)
-gc = gspread.service_account(filename='service_account.json')
+
+# 連接 Google Sheet
+# 優先從環境變數讀取 (Render 上使用)，否則從檔案讀取 (本機開發使用)
+if os.environ.get("GOOGLE_CREDENTIALS"):
+    creds_dict = json.loads(os.environ.get("GOOGLE_CREDENTIALS"))
+    gc = gspread.service_account_from_dict(creds_dict)
+else:
+    # 本機開發時使用檔案
+    gc = gspread.service_account(filename='service_account.json')
+
 SHEET_URL = 'https://docs.google.com/spreadsheets/d/1eXfZQTp7r9moUJ0vetuOvMsB0a91HRq6V994_0L-oEo/edit?gid=1945406050#gid=1945406050'
 
 def get_db():
