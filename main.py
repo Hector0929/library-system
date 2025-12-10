@@ -115,6 +115,7 @@ def get_student_name(student_id):
 class ActionRequest(BaseModel):
     book_id: str
     student_id: str
+    password: str = "" # Default to empty string for backward compatibility/optional cases if needed, but logic enforces it
 
 # --- 2. 借書 API ---
 @app.post("/borrow")
@@ -123,13 +124,28 @@ def borrow_book(req: ActionRequest):
         sh = get_db()
         books_sheet = sh.worksheet("Books")
         trans_sheet = sh.worksheet("Transactions")
+        users_sheet = sh.worksheet("Users")
         
-        # A. 找書
+        # A. 驗證使用者密碼
+        user_cell = users_sheet.find(req.student_id)
+        if not user_cell:
+             return {"success": False, "message": "找無此學生ID"}
+        
+        # Password assumed to be in Column 3 (Index 2)
+        # 欄位: [Student_ID, Name, Password]
+        user_row = users_sheet.row_values(user_cell.row)
+        stored_password = str(user_row[2]) if len(user_row) > 2 else ""
+        
+        # 簡單去除空白，避免因為格式問題導致錯誤
+        if str(req.password).strip() != stored_password.strip():
+             return {"success": False, "message": "密碼錯誤，請重新輸入"}
+
+        # B. 找書
         cell = books_sheet.find(req.book_id)
         if not cell:
             raise HTTPException(status_code=404, detail="找不到這本書")
             
-        # B. 檢查狀態
+        # C. 檢查狀態
         row_data = books_sheet.row_values(cell.row)
         # 欄位順序: 
         # 0:ID, 1:ISBN, 2:Title, 3:Status, 
