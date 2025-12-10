@@ -4,90 +4,160 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>班級圖書借閱系統</title>
+    <title>領頭羊圖書借閱系統</title>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
+        :root {
+            --primary-color: #4361ee;
+            --secondary-color: #3f37c9;
+            --success-color: #4cc9f0;
+            --warning-color: #f72585;
+            --background-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-color: #2b2d42;
+            --border-radius: 16px;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             padding: 20px;
-            background: #f0f2f5;
-            text-align: center;
+            background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            margin: 0;
+            color: var(--text-color);
         }
 
         .card {
-            background: white;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            max-width: 500px;
-            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            width: 100%;
+            max-width: 480px;
+            margin-top: 20px;
+            transition: transform 0.3s ease;
         }
 
         h1 {
-            margin-bottom: 20px;
-            font-size: 1.5rem;
-            color: #333;
+            margin: 0 0 25px 0;
+            font-size: 1.8rem;
+            color: var(--secondary-color);
+            text-align: center;
+            font-weight: 700;
         }
 
-        input {
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            width: 80%;
-            margin-bottom: 10px;
-            font-size: 16px;
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            box-sizing: border-box;
+            transition: border-color 0.3s ease;
+            outline: none;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--primary-color);
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-group input {
+            flex: 1;
         }
 
         #reader {
             width: 100%;
-            margin-top: 20px;
-            border-radius: 8px;
+            margin-top: 10px;
+            border-radius: 12px;
             overflow: hidden;
+            border: 2px dashed #cbd5e1;
         }
 
         .btn {
-            display: inline-block;
-            padding: 10px 20px;
-            margin: 5px;
-            border-radius: 6px;
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 12px;
             color: white;
             text-decoration: none;
             border: none;
-            font-size: 16px;
+            font-size: 1.1rem;
+            font-weight: 600;
             cursor: pointer;
-            width: 100%;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
-        .btn-blue {
-            background: #007bff;
+        .btn:active {
+            transform: translateY(2px);
+            box-shadow: none;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
         }
 
         .btn-green {
-            background: #28a745;
+            background: #2a9d8f;
         }
 
         .btn-orange {
-            background: #fd7e14;
+            background: #fb8500;
+        }
+
+        .btn-blue {
+            background: #4895ef;
         }
 
         .btn-red {
-            background: #dc3545;
+            background: #ef233c;
         }
 
         #result-area {
-            margin-top: 20px;
+            margin-top: 25px;
             display: none;
-            padding: 15px;
-            background: #e9ecef;
-            border-radius: 8px;
+            padding: 20px;
+            background: #f1f5f9;
+            border-radius: 12px;
+            border-left: 5px solid var(--primary-color);
+        }
+
+        #book-title {
+            margin: 0 0 10px 0;
+            font-size: 1.4rem;
+            color: var(--secondary-color);
         }
 
         .status-tag {
             display: inline-block;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
             font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .status-available {
@@ -103,6 +173,83 @@
         .loading {
             color: #666;
             font-style: italic;
+            text-align: center;
+        }
+
+        .divider {
+            height: 1px;
+            background: #e9ecef;
+            margin: 25px 0;
+            border: none;
+        }
+
+        .scan-toggle {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #666;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        /* Custom styles for html5-qrcode */
+        #html5-qrcode-button-camera-permission {
+            padding: 15px 20px;
+            font-size: 1.1rem;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            font-weight: 600;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+
+        #html5-qrcode-button-camera-permission:active {
+            transform: translateY(2px);
+        }
+
+        #html5-qrcode-anchor-scan-type-change {
+            display: block;
+            margin-top: 15px;
+            font-size: 1rem;
+            color: var(--secondary-color);
+            text-decoration: underline;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        /* Mobile Responsive Adjustments */
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+                align-items: flex-start;
+            }
+
+            .card {
+                padding: 20px;
+                margin-top: 0;
+                box-shadow: none;
+                border-radius: 12px;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+                margin-bottom: 15px;
+            }
+
+            input[type="text"],
+            .btn {
+                padding: 12px;
+                font-size: 16px;
+            }
+
+            #reader {
+                border-width: 2px;
+            }
         }
     </style>
 </head>
@@ -110,19 +257,38 @@
 <body>
 
     <div class="card">
-        <h1>📚 班級圖書掃描</h1>
-
-        <div>
-            <label>我的學號：</label><br>
-            <input type="text" id="student_id" placeholder="請輸入學號 (如 A001)">
+        <div style="text-align: center; margin-bottom: 25px;">
+            <img src="leader_yesu_logo.png" alt="Leader YESU 圖書管理系統"
+                style="max-width: 100%; height: auto; display: block; margin: 0 auto;">
         </div>
-        <div style="margin-top: 10px;">
-            <label>我的密碼：</label><br>
-            <input type="password" id="password" placeholder="請輸入密碼">
+
+        <div class="form-group">
+            <label for="student_id">會員編號</label>
+            <input type="text" id="student_id" placeholder="例如：A001">
+        </div>
+
+        <div class="form-group">
+            <label for="password">密碼</label>
+            <input type="password" id="password" placeholder="請輸入密碼"
+                style="width: 100%; padding: 15px; border: 2px solid #e9ecef; border-radius: 12px; font-size: 1.1rem; box-sizing: border-box; outline: none; transition: border-color 0.3s ease;">
+            <div style="text-align: right; margin-top: 5px;">
+                <a href="#" onclick="showChangePasswordModal(); return false;"
+                    style="font-size: 0.9rem; color: #666; text-decoration: none;">修改密碼？</a>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="form-group">
+            <label for="book_id">書籍條碼 (或掃描)</label>
+            <div class="input-group">
+                <input type="text" id="book_id" placeholder="輸入書號或掃描">
+                <button class="btn btn-primary" style="width: auto; margin: 0;" onclick="manualSearch()">查詢</button>
+            </div>
         </div>
 
         <div id="reader"></div>
-        <p id="camera-msg" style="font-size:12px; color:#888;">請允許使用相機</p>
+        <p id="camera-msg" style="font-size:12px; color:#888; text-align: center; margin-top: 5px;">請允許使用相機以進行掃描</p>
 
         <div id="result-area">
             <h3 id="book-title">書名載入中...</h3>
@@ -135,18 +301,18 @@
     </div>
 
     <script>
-        // ★★★ 設定區：Render 的網址 ★★★
+        // ★★★ 設定區：Render 的網址★★★
         const API_BASE_URL = "https://library-system-yb3c.onrender.com";
-        // const API_BASE_URL = "http://127.0.0.1:8000"; // Local testing
 
         // --- 程式邏輯 ---
         const studentInput = document.getElementById('student_id');
-        const passwordInput = document.getElementById('password');
+        const bookInput = document.getElementById('book_id');
         const resultArea = document.getElementById('result-area');
         const actionsDiv = document.getElementById('actions');
         let currentBookId = null;
+        let html5QrCode = null; // 改用 Html5Qrcode class
 
-        // 1. 自動讀取/儲存學號 (但不儲存密碼，為了安全)
+        // 1. 自動讀取/儲存學號
         if (localStorage.getItem('student_id')) {
             studentInput.value = localStorage.getItem('student_id');
         }
@@ -158,23 +324,59 @@
         function onScanSuccess(decodedText, decodedResult) {
             console.log(`掃描到: ${decodedText}`);
 
+            // 填入輸入框
+            bookInput.value = decodedText;
+
             if (!studentInput.value) {
-                alert("請先輸入學號！");
+                Swal.fire({
+                    icon: 'warning',
+                    title: '請先輸入會員編號！',
+                    confirmButtonText: '確定',
+                    confirmButtonColor: '#4361ee'
+                });
                 return;
             }
 
-            // 暫停掃描，避免重複觸發
-            html5QrcodeScanner.clear();
+            // 掃描成功後，暫停掃描
+            stopScanner();
+
             document.getElementById('camera-msg').innerText = "掃描成功！處理中...";
 
             // 呼叫後端查詢書籍
             fetchBookInfo(decodedText);
         }
 
+        // 手動查詢
+        function manualSearch() {
+            const bookId = bookInput.value.trim();
+            if (!bookId) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: '請輸入書籍條碼！',
+                    confirmButtonText: '確定',
+                    confirmButtonColor: '#4361ee'
+                });
+                return;
+            }
+            if (!studentInput.value) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: '請先輸入會員編號！',
+                    confirmButtonText: '確定',
+                    confirmButtonColor: '#4361ee'
+                });
+                return;
+            }
+            fetchBookInfo(bookId);
+        }
+
         // 3. 查詢書籍 API
         async function fetchBookInfo(bookId) {
             resultArea.style.display = 'block';
             actionsDiv.innerHTML = '<p class="loading">正在查詢書籍狀態...</p>';
+
+            // 滾動到結果區
+            resultArea.scrollIntoView({ behavior: 'smooth' });
 
             try {
                 const response = await fetch(`${API_BASE_URL}/scan/${bookId}`);
@@ -197,8 +399,17 @@
                 renderButtons(data.status);
 
             } catch (error) {
-                alert("錯誤：" + error.message);
-                location.reload(); // 重新整理讓掃描器回來
+                // 根據使用者要求，統一顯示此訊息
+                Swal.fire({
+                    icon: 'error',
+                    title: '查無此書，請聯絡管理員',
+                    confirmButtonText: '確定',
+                    confirmButtonColor: '#ef233c'
+                }).then(() => {
+                    resetScanner();
+                });
+                // 掃描失敗時，保持相機關閉，等待使用者手動重試
+                document.getElementById('camera-msg').innerText = "掃描失敗，請重試";
             }
         }
 
@@ -211,23 +422,38 @@
             } else if (status === 'Borrowed' || status === 'Reserved') {
                 // 如果是被借走，可能要還書，也可能要排隊
                 html += `<button class="btn btn-orange" onclick="doAction('return')">我要還書</button>`;
-                html += `<div style="height:10px"></div>`; // 間隔
                 html += `<button class="btn btn-blue" onclick="doAction('queue')">我要排隊</button>`;
             }
 
-            html += `<div style="height:10px"></div>`;
-            html += `<button class="btn btn-red" onclick="location.reload()">重新掃描</button>`;
+            html += `<button class="btn btn-red" onclick="resetScanner()">重新掃描 / 查詢</button>`;
 
             actionsDiv.innerHTML = html;
         }
 
+        function resetScanner() {
+            resultArea.style.display = 'none';
+            bookInput.value = '';
+            document.getElementById('camera-msg').innerText = "請允許使用相機以進行掃描";
+
+            // 顯示啟動按鈕
+            document.getElementById('start-scan-btn').style.display = 'block';
+        }
+
+        // 5. 執行 借/還/排隊 動作
         // 5. 執行 借/還/排隊 動作
         async function doAction(actionType) {
             const studentId = studentInput.value;
+            const passwordInput = document.getElementById('password');
             const password = passwordInput.value;
 
+            // 如果是借書，必須輸入密碼
             if (actionType === 'borrow' && !password) {
-                alert("請輸入密碼！");
+                Swal.fire({
+                    icon: 'warning',
+                    title: '請輸入密碼！',
+                    confirmButtonText: '確定',
+                    confirmButtonColor: '#4361ee'
+                });
                 return;
             }
 
@@ -247,23 +473,157 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    alert("成功：" + result.message);
-                    location.reload(); // 成功後重整頁面
+                    Swal.fire({
+                        icon: 'success',
+                        title: '成功',
+                        text: result.message,
+                        confirmButtonText: '確定',
+                        confirmButtonColor: '#4cc9f0'
+                    }).then(() => {
+                        location.reload(); // 成功後重整頁面
+                    });
                 } else {
-                    alert("失敗：" + result.message);
-                    // 失敗可能要重新顯示按鈕，這裡簡單處理直接重整
-                    location.reload();
+                    Swal.fire({
+                        icon: 'error',
+                        title: '失敗',
+                        text: result.message,
+                        confirmButtonText: '確定',
+                        confirmButtonColor: '#ef233c'
+                    }).then(() => {
+                        // 失敗也重整，保持跟 User code 一致，或依需求只 resetScanner
+                        // location.reload(); 
+                        // 改為只重置掃描，體驗比較好，除非 User 強制要 reload
+                        // 但 User code 寫了 location.reload()，我這裡折衷一下：失敗不 reload，讓使用者可以重試
+                        fetchBookInfo(currentBookId);
+                    });
                 }
             } catch (error) {
-                alert("連線失敗：" + error.message);
-                location.reload();
+                Swal.fire({
+                    icon: 'error',
+                    title: '連線失敗',
+                    text: error.message,
+                    confirmButtonText: '確定',
+                    confirmButtonColor: '#ef233c'
+                }).then(() => {
+                    // resetScanner();
+                });
             }
         }
 
-        // 初始化掃描器
-        let html5QrcodeScanner = new Html5QrcodeScanner(
-            "reader", { fps: 10, qrbox: 250 });
-        html5QrcodeScanner.render(onScanSuccess);
+        // --- 改用 Html5Qrcode 直接控制相機 ---
+
+        async function startCamera() {
+            try {
+                // 隱藏按鈕
+                document.getElementById('start-scan-btn').style.display = 'none';
+                document.getElementById('camera-msg').innerText = "正在啟動相機...";
+
+                if (!html5QrCode) {
+                    html5QrCode = new Html5Qrcode("reader");
+                }
+
+                // 直接使用後置鏡頭 (environment)
+                const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+                await html5QrCode.start(
+                    { facingMode: "environment" },
+                    config,
+                    onScanSuccess
+                );
+
+                document.getElementById('camera-msg').innerText = "正在掃描中...";
+
+            } catch (err) {
+                console.error("Error starting scanner", err);
+                document.getElementById('camera-msg').innerText = "無法啟動相機，請確認權限或使用手動輸入。";
+                document.getElementById('start-scan-btn').style.display = 'block'; // 失敗則顯示按鈕
+
+                Swal.fire({
+                    icon: 'error',
+                    title: '無法啟動相機',
+                    text: '請確認您已允許使用相機權限，或嘗試使用其他瀏覽器。',
+                    confirmButtonText: '確定'
+                });
+            }
+        }
+
+        async function stopScanner() {
+            if (html5QrCode) {
+                try {
+                    await html5QrCode.stop();
+                    console.log("Scanner stopped");
+                } catch (e) {
+                    console.log("Error stopping scanner", e);
+                }
+            }
+        }
+
+        // 修改密碼功能
+        async function showChangePasswordModal() {
+            const currentStudentId = studentInput.value || '';
+
+            const { value: formValues } = await Swal.fire({
+                title: '修改密碼',
+                html:
+                    `<input id="swal-student-id" class="swal2-input" placeholder="會員編號" value="${currentStudentId}">` +
+                    '<input id="swal-old-pass" type="password" class="swal2-input" placeholder="舊密碼">' +
+                    '<input id="swal-new-pass" type="password" class="swal2-input" placeholder="新密碼">',
+                focusConfirm: false,
+                showCancelButton: true,
+                confirmButtonText: '確認修改',
+                cancelButtonText: '取消',
+                confirmButtonColor: '#4361ee',
+                preConfirm: () => {
+                    return [
+                        document.getElementById('swal-student-id').value,
+                        document.getElementById('swal-old-pass').value,
+                        document.getElementById('swal-new-pass').value
+                    ]
+                }
+            });
+
+            if (formValues) {
+                const [sid, oldPass, newPass] = formValues;
+                if (!sid || !oldPass || !newPass) {
+                    Swal.fire('錯誤', '請填寫所有欄位', 'error');
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/change_password`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            student_id: sid,
+                            old_password: oldPass,
+                            new_password: newPass
+                        })
+                    });
+                    const result = await response.json();
+
+                    if (result.success) {
+                        Swal.fire('成功', result.message, 'success');
+                    } else {
+                        Swal.fire('失敗', result.message, 'error');
+                    }
+                } catch (e) {
+                    Swal.fire('錯誤', '連線失敗: ' + e.message, 'error');
+                }
+            }
+        }
+
+        // 初始化
+        // 插入一個啟動按鈕到 reader 前面
+        const readerDiv = document.getElementById('reader');
+        const startBtn = document.createElement('button');
+        startBtn.id = 'start-scan-btn';
+        startBtn.className = 'btn btn-primary';
+        startBtn.innerText = '開啟相機掃描';
+        startBtn.onclick = startCamera;
+        // 插入在 reader 之前
+        readerDiv.parentNode.insertBefore(startBtn, readerDiv);
+
+        // 預設不自動啟動，等待使用者點擊按鈕
 
     </script>
 

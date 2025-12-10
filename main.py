@@ -307,6 +307,43 @@ def join_queue(req: ActionRequest):
         return {"success": False, "error": str(e)}
 
 
+# --- 5. 修改密碼 API ---
+class ChangePasswordRequest(BaseModel):
+    student_id: str
+    old_password: str
+    new_password: str
+
+@app.post("/change_password")
+def change_password(req: ChangePasswordRequest):
+    try:
+        sh = get_db()
+        users_sheet = sh.worksheet("Users")
+        
+        # 1. 找使用者
+        cell = users_sheet.find(req.student_id)
+        if not cell:
+            return {"success": False, "message": "找無此學生ID"}
+            
+        # 2. 驗證舊密碼
+        # 假設欄位順序: [Student_ID, Name, Password] -> Index 0, 1, 2
+        # 注意：使用 cell(row, col) 取值，col 是 1-based，所以 Password 是第 3 欄
+        # 或者使用 row_values 取整行
+        user_row_values = users_sheet.row_values(cell.row)
+        current_password = str(user_row_values[2]) if len(user_row_values) > 2 else ""
+        
+        if str(req.old_password).strip() != current_password.strip():
+            return {"success": False, "message": "舊密碼錯誤"}
+            
+        # 3. 更新密碼
+        # update_cell(row, col, value) -> col 3 is Password
+        users_sheet.update_cell(cell.row, 3, req.new_password)
+        
+        return {"success": True, "message": "密碼修改成功！"}
+
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="127.0.0.1", port=8000)
