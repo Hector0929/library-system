@@ -98,6 +98,19 @@ def scan_book(book_id: str):
     except Exception as e:
         return {"error": str(e)}
 
+
+# 取得學生姓名 Helper
+def get_student_name(student_id):
+    try:
+        sh = get_db()
+        users_sheet = sh.worksheet("Users")
+        cell = users_sheet.find(student_id)
+        if cell:
+            return users_sheet.cell(cell.row, 2).value
+        return "Unknown"
+    except:
+        return "Unknown"
+
 # --- 定義傳入資料的模型 ---
 class ActionRequest(BaseModel):
     book_id: str
@@ -118,11 +131,14 @@ def borrow_book(req: ActionRequest):
             
         # B. 檢查狀態
         row_data = books_sheet.row_values(cell.row)
-        # 假設欄位順序: [ID, ISBN, Title, Status, Holder, Next_In_Line...]
-        # Status=3(第4欄), Holder=4(第5欄), Next_In_Line=5(第6欄) (index從0開始)
+        # 欄位順序: 
+        # 0:ID, 1:ISBN, 2:Title, 3:Status, 
+        # 4:Current_Holder_ID, 5:Current_Holder_Name
+        # 6:Next_In_Line_ID, 7:Next_In_Line_Name
         
         current_status = row_data[3] if len(row_data) > 3 else "Unknown"
-        next_in_line = row_data[5] if len(row_data) > 5 else ""
+        # Next_In_Line_ID 在第 7 欄 (index 6)
+        next_in_line_id = row_data[6] if len(row_data) > 6 else ""
         
         # === 邏輯判斷 ===
         if current_status == "Borrowed":
@@ -130,14 +146,24 @@ def borrow_book(req: ActionRequest):
             
         if current_status == "Reserved":
             # 如果是保留狀態，檢查是否為保留給該學生
-            if req.student_id != next_in_line:
-                return {"success": False, "message": f"抱歉，這本書目前保留給同學 {next_in_line}。"}
+            if req.student_id != next_in_line_id:
+                return {"success": False, "message": f"抱歉，這本書目前保留給同學 {next_in_line_id}。"}
         
         # === 執行借書 ===
-        # 不論是 Available 還是 Reserved (如果是保留本人)，都允許借出
+        student_name = get_student_name(req.student_id)
+
+        # Update cells
+        # Col 4: Status -> Borrowed
+        # Col 5: Current_Holder_ID -> req.student_id
+        # Col 6: Current_Holder_Name -> student_name
+        # Col 7: Next_In_Line_ID -> Clear
+        # Col 8: Next_In_Line_Name -> Clear
+        
         books_sheet.update_cell(cell.row, 4, "Borrowed")
         books_sheet.update_cell(cell.row, 5, req.student_id)
-        books_sheet.update_cell(cell.row, 6, "") # 清空預約欄
+        books_sheet.update_cell(cell.row, 6, student_name)
+        books_sheet.update_cell(cell.row, 7, "") 
+        books_sheet.update_cell(cell.row, 8, "") 
         
         # 寫入交易紀錄
         trans_sheet.append_row([
@@ -179,27 +205,36 @@ def return_book(req: ActionRequest):
             # Queue 欄位順序: Queue_ID, Book_ID, Student_ID, Time
             # Student_ID 在第 3 欄
             queue_row_data = queue_sheet.row_values(first_queue_cell.row)
-            next_student = queue_row_data[2]
+            next_student_id = queue_row_data[2]
+            next_student_name = get_student_name(next_student_id)
             
             # 3. 更新書籍狀態為 Reserved (保留中)
-            # Status (第4欄) -> Reserved
-            # Current_Holder (第5欄) -> 清空 (書在庫存，但保留)
-            # Next_In_Line (第6欄) -> 填入排隊者 ID
+            # Col 4: Status -> Reserved
+            # Col 5: Current_Holder_ID -> Clear
+            # Col 6: Current_Holder_Name -> Clear
+            # Col 7: Next_In_Line_ID -> next_student_id
+            # Col 8: Next_In_Line_Name -> next_student_name
+            
             books_sheet.update_cell(cell.row, 4, "Reserved")
             books_sheet.update_cell(cell.row, 5, "")
-            books_sheet.update_cell(cell.row, 6, next_student)
+            books_sheet.update_cell(cell.row, 6, "")
+            books_sheet.update_cell(cell.row, 7, next_student_id)
+            books_sheet.update_cell(cell.row, 8, next_student_name)
             
             # 4. 把這個人從排隊清單刪除 (以免重複排)
             queue_sheet.delete_rows(first_queue_cell.row)
             
-            msg = f"還書成功！此書已保留給排隊同學：{next_student}"
+            msg = f"還書成功！此書已保留給排隊同學：{next_student_name} ({next_student_id})"
             
         else:
             # === 沒人排隊 ===
             # 一樣變回 Available
+            # Clear all holder and next info
             books_sheet.update_cell(cell.row, 4, "Available")
             books_sheet.update_cell(cell.row, 5, "")
-            books_sheet.update_cell(cell.row, 6, "") # 清空預約欄
+            books_sheet.update_cell(cell.row, 6, "")
+            books_sheet.update_cell(cell.row, 7, "")
+            books_sheet.update_cell(cell.row, 8, "")
             
             msg = "還書成功，謝謝！"
 
