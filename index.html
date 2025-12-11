@@ -264,14 +264,16 @@
 
         <div class="form-group">
             <label for="student_id">會員編號</label>
-            <input type="text" id="student_id" placeholder="例如：A001">
+            <input type="text" id="student_id" placeholder="請輸入手機號碼">
         </div>
 
         <div class="form-group">
             <label for="password">密碼</label>
             <input type="password" id="password" placeholder="請輸入密碼"
                 style="width: 100%; padding: 15px; border: 2px solid #e9ecef; border-radius: 12px; font-size: 1.1rem; box-sizing: border-box; outline: none; transition: border-color 0.3s ease;">
-            <div style="text-align: right; margin-top: 5px;">
+            <div style="display: flex; justify-content: space-between; margin-top: 5px;">
+                <a href="#" onclick="showRegisterModal(); return false;"
+                    style="font-size: 0.9rem; color: #4361ee; text-decoration: none; font-weight: bold;">註冊帳號</a>
                 <a href="#" onclick="showChangePasswordModal(); return false;"
                     style="font-size: 0.9rem; color: #666; text-decoration: none;">修改密碼？</a>
             </div>
@@ -390,7 +392,15 @@
                 const statusEl = document.getElementById('book-status');
                 const msgEl = document.getElementById('status-msg');
 
-                statusEl.innerText = data.status;
+                // 翻譯狀態顯示
+                let displayStatus = data.status;
+                if (data.status === 'Available') {
+                    displayStatus = '可借';
+                } else if (data.status === 'Borrowed') {
+                    displayStatus = '已外借';
+                }
+
+                statusEl.innerText = displayStatus;
                 msgEl.innerText = data.message;
 
                 statusEl.className = 'status-tag ' + (data.status === 'Available' ? 'status-available' : 'status-borrowed');
@@ -603,6 +613,67 @@
 
                     if (result.success) {
                         Swal.fire('成功', result.message, 'success');
+                    } else {
+                        Swal.fire('失敗', result.message, 'error');
+                    }
+                } catch (e) {
+                    Swal.fire('錯誤', '連線失敗: ' + e.message, 'error');
+                }
+            }
+        }
+
+        // 註冊帳號功能
+        async function showRegisterModal() {
+            const { value: formValues } = await Swal.fire({
+                title: '註冊新帳號',
+                html:
+                    '<input id="swal-reg-id" class="swal2-input" placeholder="手機號碼 (會員編號)">' +
+                    '<input id="swal-reg-name" class="swal2-input" placeholder="姓名">' +
+                    '<input id="swal-reg-pass" type="password" class="swal2-input" placeholder="設定密碼">',
+                focusConfirm: false,
+                showCancelButton: true,
+                confirmButtonText: '註冊',
+                cancelButtonText: '取消',
+                confirmButtonColor: '#28a745',
+                preConfirm: () => {
+                    return [
+                        document.getElementById('swal-reg-id').value,
+                        document.getElementById('swal-reg-name').value,
+                        document.getElementById('swal-reg-pass').value
+                    ]
+                }
+            });
+
+            if (formValues) {
+                const [sid, name, pass] = formValues;
+                if (!sid || !name || !pass) {
+                    Swal.fire('錯誤', '請填寫所有欄位', 'error');
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/register`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            student_id: sid,
+                            name: name,
+                            password: pass
+                        })
+                    });
+                    const result = await response.json();
+
+                    if (result.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: '註冊成功',
+                            text: result.message,
+                            confirmButtonText: '太棒了'
+                        }).then(() => {
+                            // 自動填入學號
+                            studentInput.value = sid;
+                            localStorage.setItem('student_id', sid);
+                        });
                     } else {
                         Swal.fire('失敗', result.message, 'error');
                     }

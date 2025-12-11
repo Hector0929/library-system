@@ -343,6 +343,32 @@ def change_password(req: ChangePasswordRequest):
     except Exception as e:
         return {"success": False, "error": str(e)}
 
+# --- 6. 註冊帳號 API ---
+class RegisterRequest(BaseModel):
+    student_id: str
+    name: str
+    password: str
+
+@app.post("/register")
+def register_user(req: RegisterRequest):
+    try:
+        sh = get_db()
+        users_sheet = sh.worksheet("Users")
+        
+        # 1. 檢查帳號是否存在
+        cell = users_sheet.find(req.student_id)
+        if cell:
+            return {"success": False, "message": "此會員編號日已存在"}
+            
+        # 2. 新增使用者
+        # 欄位順序: [Student_ID, Name, Password]
+        users_sheet.append_row([req.student_id, req.name, req.password])
+        
+        return {"success": True, "message": "註冊成功！"}
+
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
 
 if __name__ == "__main__":
     import uvicorn
